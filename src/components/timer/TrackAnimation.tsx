@@ -12,6 +12,12 @@ interface TrackAnimationProps {
   onLapComplete?: () => void;
 }
 
+interface PointOnPath {
+  x: number;
+  y: number;
+  angle: number;
+}
+
 export default function TrackAnimation({
   track,
   isRunning,
@@ -23,6 +29,58 @@ export default function TrackAnimation({
   const carControls = useAnimation();
   const trailControls = useAnimation();
   const [previousProgress, setPreviousProgress] = useState(0);
+  const [carRotation, setCarRotation] = useState(0);
+  
+  // Function to get point and angle at a specific position on the SVG path
+  const getPointAtLength = (path: SVGPathElement, progress: number): PointOnPath => {
+    const pathLength = path.getTotalLength();
+    const position = progress * pathLength;
+    
+    // Get current point
+    const point = path.getPointAtLength(position);
+    
+    // Calculate angle by getting points before and after
+    const lookAhead = 1; // Small value to look ahead/behind for angle calculation
+    const pointBefore = path.getPointAtLength(Math.max(position - lookAhead, 0));
+    const pointAfter = path.getPointAtLength(Math.min(position + lookAhead, pathLength));
+    
+    // Calculate angle in degrees
+    const angle = Math.atan2(pointAfter.y - pointBefore.y, pointAfter.x - pointBefore.x) * (180 / Math.PI);
+    
+    return {
+      x: point.x,
+      y: point.y,
+      angle: angle
+    };
+  };
+  
+  // Update car position and rotation based on progress
+  useEffect(() => {
+    if (pathRef.current) {
+      const pathElement = pathRef.current;
+      const { angle } = getPointAtLength(pathElement, progress);
+      setCarRotation(angle);
+      
+      // Update car position on the path
+      carControls.start({
+        offsetDistance: `${progress * 100}%`,
+        transition: { 
+          duration: 0.3,
+          ease: isRunning ? "linear" : "easeOut"
+        }
+      });
+      
+      // Update trail
+      trailControls.start({
+        pathLength: progress,
+        opacity: isRunning ? 0.8 : 0.3,
+        transition: {
+          duration: isRunning ? 0.3 : 0.5,
+          ease: "linear"
+        }
+      });
+    }
+  }, [progress, carControls, trailControls, isRunning]);
   
   // Handle reset animation
   useEffect(() => {
@@ -45,6 +103,9 @@ export default function TrackAnimation({
           ease: "easeInOut"
         }
       });
+      
+      // Reset car rotation
+      setCarRotation(0);
     }
     
     setPreviousProgress(progress);
@@ -86,14 +147,7 @@ export default function TrackAnimation({
           strokeLinecap="round"
           strokeLinejoin="round"
           initial={{ pathLength: 0, opacity: 0.3 }}
-          animate={{
-            pathLength: isRunning ? progress : previousProgress,
-            opacity: isRunning ? 0.8 : 0.3,
-          }}
-          transition={{
-            duration: isRunning ? 0.3 : 0.5,
-            ease: "linear"
-          }}
+          animate={trailControls}
         />
         
         {/* Dotted animation line */}
@@ -123,25 +177,15 @@ export default function TrackAnimation({
           animate={carControls}
           style={{
             offsetPath: `path("${track.svgPath}")`,
-            offsetRotate: "auto"
+            offsetRotate: "0deg", // We'll handle rotation manually through the car component
           }}
           transition={{
             duration: 0.3,
             ease: isRunning ? "linear" : "easeOut"
           }}
         >
-          <F1Car isRunning={isRunning} />
+          <F1Car isRunning={isRunning} rotation={carRotation} />
         </motion.g>
-        
-        {/* Update the car position based on progress */}
-        <motion.g
-          animate={{ offsetDistance: `${progress * 100}%` }}
-          style={{
-            offsetPath: `path("${track.svgPath}")`,
-            offsetRotate: "auto",
-            opacity: 0
-          }}
-        />
       </svg>
     </div>
   );

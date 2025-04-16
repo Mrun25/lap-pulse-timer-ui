@@ -12,3 +12,9 @@ export interface Lap {
   number: number;
   time: string;
 }
+
+export interface PointOnPath {
+  x: number;
+  y: number;
+  angle: number;
+}

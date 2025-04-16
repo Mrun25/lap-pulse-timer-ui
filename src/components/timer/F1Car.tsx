@@ -3,11 +3,12 @@ import { motion } from "framer-motion";
 
 interface F1CarProps {
   isRunning: boolean;
+  rotation?: number; // Added rotation prop
 }
 
-export default function F1Car({ isRunning }: F1CarProps) {
+export default function F1Car({ isRunning, rotation = 0 }: F1CarProps) {
   return (
-    <g>
+    <g style={{ transform: `rotate(${rotation}deg)` }}>
       {/* F1 Car SVG - Top-down view */}
       <motion.g
         animate={isRunning ? { scale: [0.9, 1, 0.9] } : {}}
@@ -20,7 +21,7 @@ export default function F1Car({ isRunning }: F1CarProps) {
         <rect x="4" y="-3" width="3" height="6" rx="0.5" fill="#333" />
         
         {/* Rear wing */}
-        <rect x="-7" y="-3" width="2" height="6" rx="0.5" fill="#333" />
+        <rect x="-7" y="-3" width="2" height="6" rx="0.5" fill="#111" />
         
         {/* Cockpit */}
         <circle cx="-1" cy="0" r="1.2" fill="#111" />
