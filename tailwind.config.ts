@@ -18,7 +18,14 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'racing': ['Orbitron', 'sans-serif'],
+				'display': ['Racing Sans One', 'sans-serif'],
+			},
 			colors: {
+				'f1-red': '#e10600',
+				'f1-black': '#0D0D0D',
+				'f1-white': '#F9F9F9',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
