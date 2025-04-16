@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import Layout from "@/components/layout/Layout";
 import TrackAnimation from "@/components/timer/TrackAnimation";
 import TimerControls from "@/components/timer/TimerControls";
@@ -25,6 +26,8 @@ export default function TrackPage() {
   const [time, setTime] = useState(180); // 3 minutes default
   const [progress, setProgress] = useState(0);
   const [laps, setLaps] = useState<Lap[]>([]);
+  const [showLapNotification, setShowLapNotification] = useState(false);
+  const [currentLap, setCurrentLap] = useState(0);
   
   // Timer/Stopwatch logic
   useEffect(() => {
@@ -36,30 +39,14 @@ export default function TrackPage() {
           setTime((prevTime) => {
             if (prevTime <= 1) {
               setIsRunning(false);
+              toast.success("Timer completed!");
               return 0;
             }
             return prevTime - 1;
           });
         } else {
           // Stopwatch mode
-          setTime((prevTime) => {
-            const newTime = prevTime + 1;
-            
-            // Record a lap every 60 seconds
-            if (newTime % 60 === 0) {
-              const lapNumber = newTime / 60;
-              const minutes = Math.floor(newTime / 60);
-              const seconds = newTime % 60;
-              const lapTime = `${minutes < 10 ? "0" : ""}${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-              
-              setLaps((prevLaps) => [
-                ...prevLaps,
-                { number: lapNumber, time: lapTime }
-              ]);
-            }
-            
-            return newTime;
-          });
+          setTime((prevTime) => prevTime + 1);
         }
       }, 1000);
     }
@@ -76,8 +63,36 @@ export default function TrackPage() {
     } else {
       // For stopwatch, progress cycles every minute (0 to 1)
       setProgress((time % 60) / 60);
+      
+      // Auto-record a lap every full minute
+      if (time > 0 && time % 60 === 0 && isRunning) {
+        const lapNumber = time / 60;
+        recordLap(lapNumber);
+      }
     }
-  }, [time, mode]);
+  }, [time, mode, isRunning]);
+  
+  // Function to record a lap
+  const recordLap = (lapNumber?: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    const lapTime = `${minutes < 10 ? "0" : ""}${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+    
+    const newLapNumber = lapNumber || currentLap + 1;
+    
+    setLaps((prevLaps) => [
+      ...prevLaps,
+      { number: newLapNumber, time: lapTime }
+    ]);
+    
+    setCurrentLap(newLapNumber);
+    
+    // Show notification
+    setShowLapNotification(true);
+    setTimeout(() => setShowLapNotification(false), 2000);
+    
+    toast.success(`Lap ${newLapNumber} recorded: ${lapTime}`);
+  };
   
   // Handlers
   const handleStart = () => {
@@ -91,13 +106,30 @@ export default function TrackPage() {
   const handleReset = () => {
     setIsRunning(false);
     setTime(mode === "timer" ? 180 : 0);
-    setProgress(mode === "timer" ? 0 : 0);
-    setLaps([]);
+    setProgress(0);
+    
+    if (mode === "stopwatch") {
+      setLaps([]);
+      setCurrentLap(0);
+    }
   };
   
   const handleSetTime = (minutes: number, seconds: number) => {
     const totalSeconds = minutes * 60 + seconds;
     setTime(totalSeconds);
+  };
+  
+  const handleLap = () => {
+    if (mode === "stopwatch" && isRunning) {
+      recordLap();
+    }
+  };
+  
+  const handleLapComplete = () => {
+    if (mode === "stopwatch" && isRunning) {
+      // This is triggered by the TrackAnimation component when a lap is completed
+      // The lap recording is now handled in the time effect to ensure accuracy
+    }
   };
   
   if (!track) {
@@ -142,6 +174,20 @@ export default function TrackPage() {
           </div>
         </div>
         
+        {/* Lap notification */}
+        <AnimatePresence>
+          {showLapNotification && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="absolute top-24 right-8 bg-f1-red text-white px-4 py-2 rounded-md shadow-lg z-50"
+            >
+              Lap {currentLap} Recorded!
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
         <TimerDisplay time={time} mode={mode} />
         
         <TrackAnimation 
@@ -149,6 +195,7 @@ export default function TrackPage() {
           isRunning={isRunning}
           progress={progress}
           mode={mode}
+          onLapComplete={handleLapComplete}
         />
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
@@ -160,6 +207,7 @@ export default function TrackPage() {
             onPause={handlePause}
             onReset={handleReset}
             onSetTime={handleSetTime}
+            onLap={handleLap}
           />
           
           <LapTracker laps={laps} />

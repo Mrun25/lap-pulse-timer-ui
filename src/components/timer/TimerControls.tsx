@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Timer, StopCircle } from "lucide-react";
+import { Play, Pause, RotateCcw, Timer, StopCircle, Flag } from "lucide-react";
 
 interface TimerControlsProps {
   mode: "timer" | "stopwatch";
@@ -11,6 +11,7 @@ interface TimerControlsProps {
   onPause: () => void;
   onReset: () => void;
   onSetTime: (minutes: number, seconds: number) => void;
+  onLap?: () => void;
 }
 
 export default function TimerControls({
@@ -21,6 +22,7 @@ export default function TimerControls({
   onPause,
   onReset,
   onSetTime,
+  onLap,
 }: TimerControlsProps) {
   const [minutes, setMinutes] = useState(3);
   const [seconds, setSeconds] = useState(0);
@@ -110,6 +112,7 @@ export default function TimerControls({
             Pause
           </Button>
         )}
+        
         <Button 
           onClick={onReset} 
           variant="secondary" 
@@ -119,6 +122,18 @@ export default function TimerControls({
           <RotateCcw className="w-5 h-5 mr-2" />
           Reset
         </Button>
+        
+        {mode === "stopwatch" && isRunning && onLap && (
+          <Button 
+            onClick={onLap} 
+            variant="outline" 
+            size="xl"
+            className="font-racing border-f1-red text-f1-red"
+          >
+            <Flag className="w-5 h-5 mr-2" />
+            Lap
+          </Button>
+        )}
       </div>
     </div>
   );

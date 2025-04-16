@@ -7,3 +7,8 @@ export interface Track {
   date: string;
   svgPath: string;
 }
+
+export interface Lap {
+  number: number;
+  time: string;
+}
