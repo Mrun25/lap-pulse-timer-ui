@@ -2,11 +2,12 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Track } from "@/types";
+import F1Car from "./F1Car";
 
 interface TrackAnimationProps {
   track: Track;
   isRunning: boolean;
-  progress: number; // 0 to 1
+  progress: number;
   mode: "timer" | "stopwatch";
 }
 
@@ -27,6 +28,7 @@ export default function TrackAnimation({
         className="stroke-f1-black dark:stroke-f1-white"
         preserveAspectRatio="xMidYMid meet"
       >
+        {/* Base track path */}
         <path
           ref={pathRef}
           d={track.svgPath}
@@ -37,18 +39,19 @@ export default function TrackAnimation({
           strokeLinejoin="round"
         />
         
+        {/* Track progress trace */}
         <motion.path
           d={track.svgPath}
           fill="transparent"
           stroke="#e10600"
-          strokeWidth="1"
+          strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeDasharray="1,3"
+          className="mix-blend-multiply dark:mix-blend-lighten"
           initial={{ pathLength: 0, opacity: 0.5 }}
           animate={{ 
             pathLength: isRunning ? 1 : 0,
-            opacity: isRunning ? 0.7 : 0.3,
+            opacity: isRunning ? 0.8 : 0.4,
           }}
           transition={{
             duration: mode === "timer" ? 60 : 60,
@@ -57,34 +60,27 @@ export default function TrackAnimation({
           }}
         />
         
+        {/* F1 Car with motion path */}
         <motion.g
           initial={{
-            offsetDistance: "0%"
+            offsetDistance: "0%",
           }}
           animate={{
-            offsetDistance: `${progress * 100}%`
+            offsetDistance: `${progress * 100}%`,
           }}
           style={{
             offsetPath: `path("${track.svgPath}")`,
-            offsetRotate: "auto"
+            offsetRotate: "auto",
           }}
           transition={{
             duration: 0.3,
-            ease: isRunning ? "linear" : "easeOut"
+            ease: isRunning ? "linear" : [0.32, 0, 0.67, 0],
           }}
         >
-          <polygon 
-            points="-5,-3 5,-3 0,5" 
-            fill="#e10600"
-            className="origin-center"
+          <F1Car 
+            isRunning={isRunning}
+            mode={mode}
           />
-          {isRunning && (
-            <circle 
-              r="10" 
-              fill="rgba(225, 6, 0, 0.2)" 
-              className="animate-ping" 
-            />
-          )}
         </motion.g>
       </svg>
     </div>
